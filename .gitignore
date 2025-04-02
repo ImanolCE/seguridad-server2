@@ -7,3 +7,5 @@ backend/config/firestore.json
 
 # Ignorar archivos de sistema
 .DS_Store
+
+frontend/.gitignore
