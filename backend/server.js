@@ -9,6 +9,29 @@ const bcrypt = require("bcrypt");
 
 require('dotenv').config();
 
+const server = express();
+
+// Reemplaza todo el bloque de CORS con esto:
+const corsOptions = {
+    origin: [
+      'https://logs-frontend-2.onrender.com',
+      'http://localhost:3000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  };
+  
+  server.use(cors(corsOptions));
+  server.options('*', cors(corsOptions)); // Preflight
+
+  server.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://logs-frontend-2.onrender.com');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    next();
+  });
+
 // Verifica que JWT_SECRET esté disponible
 const JWT_SECRET = process.env.JWT_SECRET || 'uteq';
 
@@ -21,6 +44,10 @@ const serviceAccount = {
     project_id: process.env.FIREBASE_PROJECT_ID,
     private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    auth_uri: "https://accounts.google.com/o/oauth2/auth",
+    token_uri: "https://oauth2.googleapis.com/token",
+    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.FIREBASE_CLIENT_EMAIL)}`
     // otros campos necesarios...
   };
 
@@ -33,22 +60,17 @@ if (!admin.apps.length) {
     admin.app();
 }
 
+
 // Importar rutas correctamente
 const routes = require("./routes");
 
-const server = express();
-
-
-
 // Middlewares
-server.use(
+/* server.use(
     cors({
         origin: 'http://localhost:3000',
         credentials: true,
     })
-);
-
-
+); */
 
 // Winston para logs
 const logger = winston.createLogger({
@@ -88,7 +110,7 @@ server.use((req, res, next) => {
             query: req.query,
             params: req.params,
             status: statusCode || res.statusCode,
-            server: 'server2', // Identificador del servidor
+            server: 'server1', // Identificador del servidor
             responseTime: responseTime,
             ip: req.ip || req.connection.remoteAddress, 
             userAgent: req.get('User-Agent'),
@@ -111,7 +133,7 @@ server.use((req, res, next) => {
 
         // Guardar en Firestore
         try {
-            await db.collection('logs2').add(logData);
+            await db.collection('logs').add(logData);
             console.log(" Log guardado en Firebase:", logData);
         } catch (error) {
             logger.error('Error al guardar log en Firestore:', error);
