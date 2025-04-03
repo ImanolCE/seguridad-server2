@@ -12,18 +12,18 @@ require('dotenv').config();
 // Verifica que JWT_SECRET esté disponible
 const JWT_SECRET = process.env.JWT_SECRET || 'uteq';
 
-const PORT = process.env.PORT || 3001; 
-
-// para limitar las peticiones que llegan
-const ratelimit = require('express-rate-limit');
-const limiter = ratelimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP 100 request per windows
-    message : 'Too many request from this IP, please try again after an hour'
-});
+const PORT = process.env.PORT || 3002; 
 
 
-const serviceAccount = require("./config/firestore.json");
+//const serviceAccount = require("./config/firestore.json");
+const serviceAccount = {
+    type: "service_account",
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    // otros campos necesarios...
+  };
+
 // Inicializa Firebase solo si no ha sido inicializado previamente
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -38,8 +38,7 @@ const routes = require("./routes");
 
 const server = express();
 
-// Aplicar el limitador a todas las rutas
-server.use(limiter);
+
 
 // Middlewares
 server.use(
@@ -49,7 +48,7 @@ server.use(
     })
 );
 
-server.use(limiter);
+
 
 // Winston para logs
 const logger = winston.createLogger({
@@ -81,14 +80,15 @@ server.use((req, res, next) => {
         const logLevel = statusCode >= 400 ? 'error' : 'info';
         const responseTime = Date.now() - startTime;
         const logData = {
-            logLevel: logLevel,
-            timestamp: new Date(),
+            logLevel: statusCode >= 400 ? 'error' : 'info',
+            timestamp: admin.firestore.FieldValue.serverTimestamp(), // Usar timestamp del servidor
             method: req.method,
             url: req.url,
             path: req.path,
             query: req.query,
             params: req.params,
             status: statusCode || res.statusCode,
+            server: 'server2', // Identificador del servidor
             responseTime: responseTime,
             ip: req.ip || req.connection.remoteAddress, 
             userAgent: req.get('User-Agent'),
@@ -111,7 +111,7 @@ server.use((req, res, next) => {
 
         // Guardar en Firestore
         try {
-            await db.collection('logs').add(logData);
+            await db.collection('logs2').add(logData);
             console.log(" Log guardado en Firebase:", logData);
         } catch (error) {
             logger.error('Error al guardar log en Firestore:', error);
