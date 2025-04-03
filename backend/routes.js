@@ -34,60 +34,120 @@ const logEvent = async (eventType, email, status, message, logData) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email y contraseña son requeridos" });
+        
+        // Validación robusta
+        if (!email?.match(/^\S+@\S+\.\S+$/)) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Formato de email inválido"
+            });
         }
 
-        const userSnapshot = await db.collection('usuarios').doc(email).get();
-        if (!userSnapshot.exists) {
-            await logEvent('login', email, 'failed', 'Contraseña incorrecta');
-
-            return res.status(401).json({ message: "Las credenciales son incorrectas" });
+        if (!password || password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "La contraseña debe tener al menos 6 caracteres"
+            });
         }
 
-        const user = userSnapshot.data();
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) {
-            await logEvent('login', email, 'success', 'Login exitoso');
+        const userRef = db.collection('usuarios').doc(email);
+        const doc = await userRef.get();
 
-            return res.status(401).json({ message: "Las credenciales son incorrectas" });
+        if (!doc.exists) {
+            await logEvent('login', email, 401, 'Usuario no encontrado');
+            return res.status(401).json({
+                success: false,
+                message: "Credenciales inválidas"
+            });
         }
 
-        const token = jwt.sign({ email: user.email, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
-        await logEvent('login', email, 'success', 'Login exitoso');
+        const user = doc.data();
+        const validPassword = await bcrypt.compare(password, user.password);
+        
+        if (!validPassword) {
+            await logEvent('login', email, 401, 'Contraseña incorrecta');
+            return res.status(401).json({
+                success: false,
+                message: "Credenciales inválidas"
+            });
+        }
 
-        res.json({ message: 'Login exitoso', token, username: user.username, requiresMFA: true });
+        const token = jwt.sign(
+            { 
+                email: user.email,
+                username: user.username 
+            }, 
+            JWT_SECRET, 
+            { expiresIn: '1h' }
+        );
+
+        await logEvent('login', email, 200, 'Inicio de sesión exitoso');
+        
+        res.json({
+            success: true,
+            message: "Autenticación exitosa",
+            token,
+            username: user.username,
+            requiresMFA: true
+        });
+
     } catch (error) {
-        console.error("Error en el login:", error);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        console.error("Error en login:", error);
+        await logEvent('login', req.body.email, 500, 'Error interno');
+        res.status(500).json({
+            success: false,
+            message: "Error en el servidor"
+        });
     }
 });
-
 // registro de suauario
 router.post('/register', async (req, res) => {
     try {
         const { email, username, password } = req.body;
+
+        // Validación mejorada
         if (!email || !username || !password) {
-            return res.status(400).json({ message: 'Email, usuario y contraseña son requeridos' });
+            return res.status(400).json({
+                success: false,
+                message: "Todos los campos son requeridos"
+            });
         }
+
+        // Verificar si el usuario ya existe
+        const userExists = await db.collection('usuarios').doc(email).get();
+        if (userExists.exists) {
+            return res.status(409).json({
+                success: false,
+                message: "El usuario ya existe"
+            });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const secret = speakeasy.generateSecret({ length: 20 });
 
-        const user = {
+        await db.collection("usuarios").doc(email).set({
             email,
             username,
             password: hashedPassword,
             mfaSecret: secret.base32,
-        };
-        await db.collection("usuarios").doc(email).set(user);
-        await logEvent('register', email, 'success', 'Usuario registrado con éxito');
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
 
-        res.json({ message: 'Usuario registrado con éxito', secret: secret.otpauth_url });
+        await logEvent('register', email, 201, 'Registro exitoso');
+        
+        res.status(201).json({
+            success: true,
+            message: "Usuario registrado",
+            secret: secret.otpauth_url
+        });
+
     } catch (error) {
-        console.error("Error al registrar usuario:", error);
-        await logEvent('register', email, 'failed', 'Error al registrar usuario');
-
-        res.status(500).json({ message: "Error interno del servidor" });
+        console.error("Error en registro:", error);
+        await logEvent('register', req.body.email, 500, 'Error en registro');
+        res.status(500).json({
+            success: false,
+            message: "Error al registrar usuario"
+        });
     }
 });
 
