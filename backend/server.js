@@ -18,12 +18,16 @@ const corsOptions = {
       'http://localhost:3000'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   };
   
+  // Aplica CORS de esta forma específica
   server.use(cors(corsOptions));
-  server.options('*', cors(corsOptions)); // Preflight
+  server.options('*', cors(corsOptions)); // Habilitar preflight para todas las rutas
+
 
   server.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://logs-frontend-2.onrender.com');
