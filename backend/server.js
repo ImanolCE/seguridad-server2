@@ -21,6 +21,7 @@ const corsOptions = {
   
   // Remueve los headers manuales y usa solo:
   server.use(cors(corsOptions));
+  server.use(bodyParser.json());
 
 
   server.use((req, res, next) => {
@@ -58,17 +59,9 @@ if (!admin.apps.length) {
     admin.app();
 }
 
-
 // Importar rutas correctamente
 const routes = require("./routes");
 
-// Middlewares
-/* server.use(
-    cors({
-        origin: 'http://localhost:3000',
-        credentials: true,
-    })
-); */
 
 // Winston para logs
 const logger = winston.createLogger({
@@ -81,7 +74,7 @@ const logger = winston.createLogger({
     ],
 });
 
-server.use(bodyParser.json());
+
 const db = admin.firestore();
 
 // Middleware para registrar logs

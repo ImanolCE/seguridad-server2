@@ -86,6 +86,7 @@ router.post('/login', async (req, res) => {
         // En el endpoint /login:
         res.setHeader('Access-Control-Allow-Origin', 'https://logs-frontend-2.onrender.com');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
+       
         res.json({
         success: true,
         message: "Autenticación exitosa",
@@ -102,6 +103,8 @@ router.post('/login', async (req, res) => {
         });
     }
 });
+
+
 // registro de suauario
 router.post('/register', async (req, res) => {
     try {
@@ -177,15 +180,21 @@ router.post('/register', async (req, res) => {
             window: 1 
         });
 
-        if (verified) {
-            
-            await logEvent('verify-otp', email, 'success', 'OTP verificado ');
+        res.setHeader('Access-Control-Allow-Origin', 'https://logs-frontend-2.onrender.com');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-            return res.json({ success: true, message: "Autenticado correctamente" });
+        if (verified) {
+            await logEvent('verify-otp', email, 'success', 'OTP verificado');
+            return res.json({ 
+                success: true, 
+                message: "Autenticado correctamente" 
+            });
         } else {
             await logEvent('verify-otp', email, 'failed', 'Código OTP incorrecto');
-
-            return res.status(401).json({ success: false, message: "Código OTP incorrecto" });
+            return res.status(401).json({ 
+                success: false, 
+                message: "Código OTP incorrecto" 
+            });
         }
     } catch (error) {
         console.error("Error verificando OTP:", error);
