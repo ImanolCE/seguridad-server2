@@ -21,6 +21,7 @@ const corsOptions = {
   
   // Remueve los headers manuales y usa solo:
   server.use(cors(corsOptions));
+  server.options('*', cors(corsOptions)); // Esto es crucial para preflight
   server.use(bodyParser.json());
 
 
@@ -136,6 +137,10 @@ server.use((req, res, next) => {
 
 // Usar las rutas de "routes.js"
 server.use("/api", routes);
+
+server.get('/test', (req, res) => {
+    res.json({ message: "El servidor funciona!" });
+  });
 
 server.get('/', (req, res) => {
     res.send(`Servidor corriendo en el puerto ${PORT}`);
