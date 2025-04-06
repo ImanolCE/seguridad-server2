@@ -11,22 +11,16 @@ require('dotenv').config();
 
 const server = express();
 
-// Reemplaza todo el bloque de CORS con esto:
 const corsOptions = {
-    origin: [
-      'https://logs-frontend-2.onrender.com',
-      'http://localhost:3000'
-    ],
-    credentials: true,
+    origin: ['https://logs-frontend-2.onrender.com', 'http://localhost:3000'],
+    credentials: true, // Habilita credenciales
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    optionsSuccessStatus: 200
   };
   
-  // Aplica CORS de esta forma específica
+  // Remueve los headers manuales y usa solo:
   server.use(cors(corsOptions));
-  server.options('*', cors(corsOptions)); // Habilitar preflight para todas las rutas
 
 
   server.use((req, res, next) => {

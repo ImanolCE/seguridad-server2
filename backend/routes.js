@@ -83,12 +83,14 @@ router.post('/login', async (req, res) => {
 
         await logEvent('login', email, 200, 'Inicio de sesión exitoso');
         
+        // En el endpoint /login:
+        res.setHeader('Access-Control-Allow-Origin', 'https://logs-frontend-2.onrender.com');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.json({
-            success: true,
-            message: "Autenticación exitosa",
-            token,
-            username: user.username,
-            requiresMFA: true
+        success: true,
+        message: "Autenticación exitosa",
+        token: token,
+        requiresMFA: true
         });
 
     } catch (error) {
