@@ -125,7 +125,7 @@ server.use((req, res, next) => {
 
         // Guardar en Firestore
         try {
-            await db.collection('logs').add(logData);
+            await db.collection('logs2').add(logData);
             console.log(" Log guardado en Firebase:", logData);
         } catch (error) {
             logger.error('Error al guardar log en Firestore:', error);
