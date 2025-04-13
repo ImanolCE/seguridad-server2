@@ -102,7 +102,7 @@ server.use((req, res, next) => {
             query: req.query,
             params: req.params,
             status: statusCode || res.statusCode,
-            server: 'server1', // Identificador del servidor
+            server: 'server2', // Identificador del servidor
             responseTime: responseTime,
             ip: req.ip || req.connection.remoteAddress, 
             userAgent: req.get('User-Agent'),
@@ -125,7 +125,7 @@ server.use((req, res, next) => {
 
         // Guardar en Firestore
         try {
-            await db.collection('logs').add(logData);
+            await db.collection('logs2').add(logData);
             console.log(" Log guardado en Firebase:", logData);
         } catch (error) {
             logger.error('Error al guardar log en Firestore:', error);
